@@ -13,6 +13,7 @@ jobs:
       MKL_NUM_THREADS: "1"
       MPLBACKEND: Agg
     strategy:
+      fail-fast: false
       matrix:
         python-version: ["3.10", "3.11"]
     steps:
@@ -28,4 +29,19 @@ jobs:
       - name: Lint
         run: ruff check .
       - name: Test
-        run: pytest
+        run: python -m pytest -q --junitxml=pytest-results.xml
+      - name: Report test failures
+        if: failure()
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from xml.etree import ElementTree
+          report = Path("pytest-results.xml")
+          if report.exists():
+              for case in ElementTree.parse(report).iter("testcase"):
+                  for tag in ("failure", "error"):
+                      for failure in case.findall(tag):
+                          message = case.attrib.get("name", "test") + "\n" + (failure.text or "")
+                          message = message.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+                          print("::error::" + message[:16000])
+          PY
