@@ -15,6 +15,7 @@ dependencies:
   - scikit-learn
   - pyyaml>=6
   - pydantic>=2.6,<3
+  - requests>=2.31,<3
   - matplotlib
   - cartopy>=0.22
   - pytest>=8
