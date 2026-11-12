@@ -1,0 +1,111 @@
+project:
+  name: MRI_temp12k_500_2000_all_gpu_nested_lbfgs
+  description: >-
+    MRI-ESM2-0 EOF/LIM reconstruction from 500 BCE through 2000 CE using the
+    legacy-equivalent nested LBFGS budget and processed PAGES2k, Temp12k, and
+    borehole artifacts from the 12 kyr experiment.
+
+paths:
+  simulation_root: ${LMR4DVAR_SIMULATION_ROOT}
+  output_root: ${LMR4DVAR_OUTPUT_ROOT}
+  prior_run_root: ${LMR4DVAR_OUTPUT_ROOT}/mri_esm2_sedpsm_exp0
+
+state:
+  timestep_months: 3
+  variables:
+    tas:
+      domain: global
+      n_modes: 15
+    ohc300:
+      domain: global
+      n_modes: 30
+    tos:
+      domain: global
+      n_modes: 15
+    sic:
+      domain: northern_hemisphere
+      n_modes: 15
+      eof_fillna_value: 0.0
+    sit:
+      domain: northern_hemisphere
+      n_modes: 15
+      eof_fillna_value: 0.0
+    ohc2000:
+      domain: global
+      n_modes: 30
+
+observations:
+  pages2k:
+    enabled: true
+    strict: true
+    path: ${LMR4DVAR_OUTPUT_ROOT}/MRI_temp12k_12k_0-2000_all/stages/calibrate-pages2k/cfr_job
+  temp12k:
+    enabled: true
+    strict: true
+    path: ${LMR4DVAR_OUTPUT_ROOT}/MRI_temp12k_12k_0-2000_all/stages/prepare-temp12k/temp12k.pkl
+  borehole:
+    enabled: true
+    strict: false
+    path: ${LMR4DVAR_OUTPUT_ROOT}/MRI_temp12k_12k_0-2000_all/stages/estimate-borehole-error/boreholes.nc
+    reference_period: [1300, 1700]
+    history_policy: legacy_reference_start
+
+assimilation:
+  start: "-500-01"
+  end: "2000-12"
+  optimizer: lbfgs
+  # Up to 200 outer steps x 10 inner updates, with persistent LBFGS history.
+  max_iterations: 200
+  inner_iterations: 10
+  minimum_outer_iterations: 20
+  device: cuda
+  precision: float32
+  initial_weight: 1.0
+  model_error_weight: 1.0
+  tolerance_gradient: 1.0e-7
+  tolerance_change: 1.0e-9
+  outer_tolerance_change: 1.0e-6
+  history_size: 100
+
+reconstruction:
+  variables: [tas, ohc300, tos, sic, sit, ohc2000]
+  indices: [GMT, Nino34, GMOHC, SIA, SIV]
+  sea_ice_concentration_scale: 100.0
+  sea_ice_concentration_climatology:
+    path: ${LMR4DVAR_SIMULATION_ROOT}/MRI-ESM2-0/clim/clim_remap2x2_siconc_SImon_MRI-ESM2-0_past1000_r1i1p1f1_085001-184912.nc
+    variable: siconc
+  sea_ice_thickness_climatology:
+    path: ${LMR4DVAR_SIMULATION_ROOT}/MRI-ESM2-0/clim/clim_remap2x2_sithick_SImon_MRI-ESM2-0_past1000_r1i1p1f1_085001-184912.nc
+    variable: sithick
+  plot_figures: true
+  figure_dpi: 150
+
+verification:
+  anomaly_period: [1950, 1980]
+  comparison_period: [1900, 1999]
+  running_mean_years: 31
+  plot_figures: true
+  figure_dpi: 150
+  reference_fields:
+    tos:
+      path: ${LMR4DVAR_OBSERVATION_ROOT}/season/HadISST_2x2_DE.nc
+      variable: sst
+      comparison_period: [1900, 1999]
+    tas:
+      path: ${LMR4DVAR_OBSERVATION_ROOT}/season/HadCRUT.5.0.2.0.analysis.anomalies.ensemble_mean.2x2.nc
+      variable: tas_mean
+      comparison_period: [1900, 1999]
+    sic:
+      path: ${LMR4DVAR_OBSERVATION_ROOT}/season/seaice_nh_197811-202309.2x2.nc
+      variable: cdr_seaice_conc_monthly
+      comparison_period: [1979, 1999]
+    ohc300:
+      path: ${LMR4DVAR_OBSERVATION_ROOT}/season/EN.4.2.2.f.analysis.g10.OHC300.190001-202012.2x2.nc
+      comparison_period: [1940, 1999]
+  reference_indices:
+    GMT:
+      path: ${LMR4DVAR_OBSERVATION_ROOT}/Index/GMT.nc
+      comparison_period: [1900, 1999]
+    Nino34:
+      path: ${LMR4DVAR_OBSERVATION_ROOT}/Index/Nino34.nc
+      comparison_period: [1880, 1999]

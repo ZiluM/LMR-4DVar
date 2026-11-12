@@ -1,0 +1,155 @@
+project:
+  name: CESM_pages2k_temperature_only_500_2000
+  description: Temperature-only raw-instrumental PSM ablation; identical seven-variable
+    CESM EOF/LIM, matched accepted proxy network, and optimizer. Refits temperature
+    season, coefficients and residual variance.
+paths:
+  simulation_root: ${LMR4DVAR_SIMULATION_ROOT}
+  output_root: ${LMR4DVAR_OUTPUT_ROOT}
+  prior_run_root: ${LMR4DVAR_OUTPUT_ROOT}/CESM_tardif_quarterly_prior
+state:
+  timestep_months: 3
+  variables:
+    tas:
+      domain: global
+      n_modes: 15
+      units: K
+    ohc300:
+      domain: global
+      n_modes: 30
+      units: J/m2
+    tos:
+      domain: global
+      n_modes: 15
+      units: degC
+    sic:
+      domain: northern_hemisphere
+      n_modes: 15
+      units: '%'
+      eof_fillna_value: 0.0
+    sit:
+      domain: northern_hemisphere
+      n_modes: 15
+      units: m
+      eof_fillna_value: 0.0
+    ohc2000:
+      domain: global
+      n_modes: 30
+      units: J/m2
+    pr:
+      domain: global
+      n_modes: 15
+      units: mm/day
+observations:
+  pages2k:
+    enabled: true
+    artifact_format: calibrated_netcdf
+    calibration:
+      enabled: true
+      method: tardif2019_quarterly
+      source_name: PAGES2kv2
+      source_path: ${LMR4DVAR_TARDIF_OBSERVATION_ROOT}/pages2kv2.json
+      instrumental_path: ${LMR4DVAR_TARDIF_OBSERVATION_ROOT}/gistemp1200_GHCNv4_ERSSTv5.nc
+      instrumental_variable: tempanomaly
+      precipitation_path: ${LMR4DVAR_TARDIF_OBSERVATION_ROOT}/full_data_v6_precip_10.nc
+      precipitation_variable: p
+      precipitation_season_candidates: null
+      hemisphere_season_filter: true
+      anomaly_period:
+      - 1951
+      - 1980
+      calibration_period:
+      - 1901
+      - 2000
+      low_resolution_period:
+      - 1901
+      - 2000
+      minimum_overlap: 25
+      psm_correlation_minimum: 0.0
+      residual_autocorrelation_maximum: 1.0
+      projection_fill_value: 0.0
+      season_candidates:
+      - - -12
+        - 1
+        - 2
+      - - 6
+        - 7
+        - 8
+      - - 3
+        - 4
+        - 5
+        - 6
+        - 7
+        - 8
+      - - 6
+        - 7
+        - 8
+        - 9
+        - 10
+        - 11
+      - - -9
+        - -10
+        - -11
+        - -12
+        - 1
+        - 2
+      - - -12
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+      marine_predictor: best_of_tas_tos
+      tree_ring_width_psm: temperature_only
+      matched_records_path: ${LMR4DVAR_OUTPUT_ROOT}/CESM_tardif_quarterly_prior/stages/calibrate-pages2k/calibrated_proxies.nc
+assimilation:
+  start: -500-01
+  end: 2000-12
+  device: cuda
+  precision: float32
+  max_iterations: 200
+  inner_iterations: 10
+  minimum_outer_iterations: 20
+  history_size: 100
+  outer_tolerance_change: 1.0e-06
+reconstruction:
+  variables:
+  - tas
+  - ohc300
+  - tos
+  - sic
+  - sit
+  - ohc2000
+  - pr
+  indices:
+  - GMT
+  - GMP
+  - Nino34
+  - GMOHC
+  - SIA
+  - SIV
+  sea_ice_concentration_scale: 100.0
+  sea_ice_concentration_climatology:
+    path: ${LMR4DVAR_OUTPUT_ROOT}/CESM_tardif_quarterly_prior/stages/preprocess/climatology/sic.nc
+    variable: sic
+  sea_ice_thickness_climatology:
+    path: ${LMR4DVAR_OUTPUT_ROOT}/CESM_tardif_quarterly_prior/stages/preprocess/climatology/sit.nc
+    variable: sit
+verification:
+  anomaly_period:
+  - 1951
+  - 1980
+  comparison_period:
+  - 1902
+  - 1999
+  running_mean_years: 31
+  reference_fields:
+    tas:
+      path: ${LMR4DVAR_OBSERVATION_ROOT}/season/HadCRUT.5.0.2.0.analysis.anomalies.ensemble_mean.2x2.nc
+      variable: tas_mean
+    pr:
+      path: ${LMR4DVAR_OUTPUT_ROOT}/CESM_tardif_quarterly_prior/stages/calibrate-pages2k/reference_pr_quarterly.nc
+      variable: pr
+      regrid_to_reconstruction: true
+      evaluation_scope: GPCC land coverage; not used in temperature-only regression
+        but shared with bivariate calibration.

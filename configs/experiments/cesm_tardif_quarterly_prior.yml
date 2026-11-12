@@ -1,0 +1,157 @@
+project:
+  name: CESM_tardif_quarterly_prior
+  description: >-
+    Physically aligned seven-variable CESM-LME prior and raw-instrumental PSM
+    calibration. Rebuilds all EOFs/LIM; does not reuse the shifted legacy prior.
+    Twelve members train the prior; member 011 is excluded because its January
+    1230 ocean interval is incomplete. It is reserved for held-out evaluation.
+paths:
+  simulation_root: ${LMR4DVAR_SIMULATION_ROOT}
+  output_root: ${LMR4DVAR_OUTPUT_ROOT}
+state:
+  timestep_months: 3
+  variables:
+    tas:
+      exclude_input_patterns: ['*.011.*']
+      domain: global
+      n_modes: 15
+      units: K
+      source_name: TREFHT
+      input_pattern: CESM_LME/remap/tas/b.e11.BLMTRC5CN.f19_g16.[0-9][0-9][0-9].cam.h0.TREFHT.085001-184912.nc
+      input_combine: concatenate_members
+      monthly_time_policy: cf_bounds
+      monthly_drop_partial_boundaries: true
+    ohc300:
+      exclude_input_patterns: ['*.011.*']
+      domain: global
+      n_modes: 30
+      units: J/m2
+      source_name: ohc300
+      input_pattern: CESM_LME/remap/thetao/b.e11.BLMTRC5CN.f19_g16.[0-9][0-9][0-9].pop.h.TEMP.085001-184912.nc
+      input_combine: concatenate_members
+      monthly_time_policy: cf_bounds
+      monthly_time_bounds_pattern: CESM_LME/remap/tos/b.e11.BLMTRC5CN.f19_g16.[0-9][0-9][0-9].pop.h.SST.085001-184912.nc
+      monthly_drop_partial_boundaries: true
+    tos:
+      exclude_input_patterns: ['*.011.*']
+      domain: global
+      n_modes: 15
+      units: degC
+      source_name: SST
+      input_pattern: CESM_LME/remap/tos/b.e11.BLMTRC5CN.f19_g16.[0-9][0-9][0-9].pop.h.SST.085001-184912.nc
+      input_combine: concatenate_members
+      monthly_time_policy: cf_bounds
+      monthly_drop_partial_boundaries: true
+    sic:
+      exclude_input_patterns: ['*.011.*']
+      domain: northern_hemisphere
+      n_modes: 15
+      units: '%'
+      source_name: aice
+      eof_fillna_value: 0.0
+      input_pattern: CESM_LME/remap/sic/b.e11.BLMTRC5CN.f19_g16.[0-9][0-9][0-9].cice.h.aice_nh.085001-184912.nc
+      input_combine: concatenate_members
+      monthly_time_policy: cf_bounds
+      monthly_drop_partial_boundaries: true
+    sit:
+      exclude_input_patterns: ['*.011.*']
+      domain: northern_hemisphere
+      n_modes: 15
+      units: m
+      source_name: hi
+      eof_fillna_value: 0.0
+      input_pattern: CESM_LME/remap/sit/b.e11.BLMTRC5CN.f19_g16.[0-9][0-9][0-9].cice.h.hi_nh.085001-184912.nc
+      input_combine: concatenate_members
+      monthly_time_policy: cf_bounds
+      monthly_drop_partial_boundaries: true
+    ohc2000:
+      exclude_input_patterns: ['*.011.*']
+      monthly_restrict_to_bounds_source: true  # File actually extends to 2005.
+      domain: global
+      n_modes: 30
+      units: J/m2
+      source_name: ohc2000
+      input_pattern: CESM_LME/remap/ohc2000/b.e11.BLMTRC5CN.f19_g16.[0-9][0-9][0-9].pop.h.TEMP.085001-184912.nc
+      input_combine: concatenate_members
+      monthly_time_policy: cf_bounds
+      monthly_time_bounds_pattern: CESM_LME/remap/tos/b.e11.BLMTRC5CN.f19_g16.[0-9][0-9][0-9].pop.h.SST.085001-184912.nc
+      monthly_drop_partial_boundaries: true
+    pr:
+      exclude_input_patterns: ['*.011.*']
+      domain: global
+      n_modes: 15
+      units: mm/day
+      source_units: m/s  # Verified PRECC/PRECL units; derived PRECT lacks attributes.
+      source_name: PRECT
+      input_root: ${LMR4DVAR_CESM_PRECIPITATION_ROOT}
+      input_pattern: b.e11.BLMTRC5CN.f19_g16.[0-9][0-9][0-9].cam.h0.PRECT.085001-184912.nc
+      input_combine: concatenate_members
+      monthly_time_policy: cf_bounds
+      monthly_drop_partial_boundaries: true
+preprocess:
+  input_kind: monthly
+  training_period: [850, 1849]
+  target_grid_degrees: 2.0
+  regrid: linear
+  quarterly_mode: complete
+  require_complete_years: true  # Complete retained years are 851-1849.
+  remove_monthly_climatology: true
+  detrend: linear_by_month
+lim:
+  lag_steps: 1
+  segment_length_steps: 3996  # 999 complete years per member, not legacy 4000.
+  fit_noise: false  # Discrete G/Qd prior; do not require a real continuous log(G).
+observations:
+  pages2k:
+    enabled: true
+    artifact_format: calibrated_netcdf
+    calibration:
+      enabled: true
+      method: tardif2019_quarterly
+      source_path: ${LMR4DVAR_TARDIF_OBSERVATION_ROOT}/pages2kv2.json
+      instrumental_path: ${LMR4DVAR_TARDIF_OBSERVATION_ROOT}/gistemp1200_GHCNv4_ERSSTv5.nc
+      precipitation_path: ${LMR4DVAR_TARDIF_OBSERVATION_ROOT}/full_data_v6_precip_10.nc
+      anomaly_period: [1951, 1980]
+      calibration_period: [1901, 2000]
+      low_resolution_period: [1901, 2000]
+      minimum_overlap: 25
+      psm_correlation_minimum: 0.0
+      residual_autocorrelation_maximum: 1.0
+      season_candidates:
+        - [-12, 1, 2]
+        - [6, 7, 8]
+        - [3, 4, 5, 6, 7, 8]
+        - [6, 7, 8, 9, 10, 11]
+        - [-9, -10, -11, -12, 1, 2]
+        - [-12, 1, 2, 3, 4, 5]
+assimilation:
+  start: '-500-01'
+  end: '2000-12'
+  device: cuda
+  precision: float32
+  max_iterations: 200
+  inner_iterations: 10
+  minimum_outer_iterations: 20
+  history_size: 100
+  outer_tolerance_change: 1.0e-6
+reconstruction:
+  variables: [tas, ohc300, tos, sic, sit, ohc2000, pr]
+  indices: [GMT, Nino34, GMOHC, SIA, SIV]
+  sea_ice_concentration_scale: 100.0
+  sea_ice_concentration_climatology:
+    path: ${LMR4DVAR_OUTPUT_ROOT}/CESM_tardif_quarterly_prior/stages/preprocess/climatology/sic.nc
+    variable: sic
+  sea_ice_thickness_climatology:
+    path: ${LMR4DVAR_OUTPUT_ROOT}/CESM_tardif_quarterly_prior/stages/preprocess/climatology/sit.nc
+    variable: sit
+verification:
+  anomaly_period: [1951, 1980]
+  comparison_period: [1902, 1999]
+  running_mean_years: 31
+  reference_fields:
+    tas:
+      path: ${LMR4DVAR_OBSERVATION_ROOT}/season/HadCRUT.5.0.2.0.analysis.anomalies.ensemble_mean.2x2.nc
+      variable: tas_mean
+    pr:
+      path: ${LMR4DVAR_OUTPUT_ROOT}/CESM_tardif_quarterly_prior/stages/calibrate-pages2k/reference_pr_quarterly.nc
+      variable: pr

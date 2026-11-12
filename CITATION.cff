@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+message: "Please cite the accompanying paper and record the software version used."
+title: "LMR4D-Var: paleoclimate reconstruction with weak-constraint 4D-Var"
+type: software
+version: 0.1.0
+license: MIT
+repository-code: "https://github.com/ZiluM/LMR-4DVar"
+url: "https://github.com/ZiluM/LMR-4DVar"
+authors:
+  - name: "LMR4D-Var contributors"
+preferred-citation:
+  type: article
+  title: "Coupled multiscale paleoclimate reconstruction with four-dimensional variational data assimilation"
+  authors:
+    - family-names: Meng
+      given-names: Zilu
+    - family-names: Hakim
+      given-names: Gregory J.
+    - family-names: Emile-Geay
+      given-names: Julien
+    - family-names: Gondhalekar
+      given-names: Tanaya
+    - family-names: Steig
+      given-names: Eric J.
+  year: 2026
+  doi: "10.48550/arXiv.2608.19469"
+  url: "https://arxiv.org/abs/2608.19469"
+  journal: "arXiv"
+  notes: "Preprint, arXiv:2608.19469. Update this record upon journal publication."

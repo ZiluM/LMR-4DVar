@@ -1,0 +1,27 @@
+reconstruction: ${LMR4DVAR_OUTPUT_ROOT}/CESM_pages2k_tardif_quarterly_500_2000/stages/reconstruct/fields/pr.nc
+output_root: ${LMR4DVAR_OUTPUT_ROOT}/CESM_pages2k_tardif_quarterly_500_2000/verification/precipitation_products_longest
+cache_root: ${LMR4DVAR_OUTPUT_ROOT}/CESM_pages2k_tardif_quarterly_500_2000/verification/precipitation_products/prepared
+land_mask: ${LMR4DVAR_LAND_MASK}
+baseline: [1981, 2000]
+# Each reference is intersected separately; incomplete edge years are not annualized.
+period: [1806, 2000]
+products:
+  GPCPv2.3:
+    root: ${LMR4DVAR_GPCP_ROOT}
+    type: satellite_gauge
+    scope: Global satellite-gauge product; land includes GPCC and is not fully independent of PSM calibration.
+  20CRv3:
+    url: "https://psl.noaa.gov/thredds/ncss/grid/Datasets/20thC_ReanV3/Monthlies/accumsMO/apcp.mon.mean.nc?var=apcp&north=90&south=-90&west=0&east=359&disableProjSubset=on&horizStride=1&time_start=1806-01-01T00%3A00%3A00Z&time_end=2000-12-31T00%3A00%3A00Z&timeStride=1&accept=netcdf4"
+    type: reanalysis_ensemble_mean
+    scope: Model-generated reanalysis precipitation, not observed truth; 1806-1835 is the experimental extension.
+  ERA5:
+    root: ${LMR4DVAR_ERA5_ROOT}
+    hourly_root: ${LMR4DVAR_ERA5_HOURLY_ROOT}
+    input_years: [1940, 2000]
+    type: reanalysis
+    scope: Model-generated reanalysis precipitation; formal 1940-1978 hourly archive plus 1979-2000 monthly archive; not observed truth.
+  ERA20C:
+    root: ${LMR4DVAR_ERA20C_ROOT}
+    input_years: [1900, 2000]
+    type: reanalysis
+    scope: Model-generated reanalysis precipitation; not observed truth. Daily step24 TP on 06UTC days; month boundaries shifted 6 hours.

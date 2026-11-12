@@ -1,0 +1,78 @@
+project:
+  # Use a distinct name for each PPE experiment.
+  name: mri_esm2_sedpsm_ppe
+  description: MRI-ESM2-0-prior SedPSM PPE assimilation reusing trained EOF/LIM artifacts
+
+paths:
+  # Raw simulation fields are not read when prior_run_root is configured. The
+  # simulation root is still used for the SIC/SIT reconstruction climatologies.
+  simulation_root: ${LMR4DVAR_SIMULATION_ROOT}
+  output_root: ${LMR4DVAR_OUTPUT_ROOT}
+  sedpsm_root: ${SEDPSM_ROOT}
+  prior_run_root: ${LMR4DVAR_PRIOR_ROOT}
+
+state:
+  timestep_months: 3
+  # This order and these mode counts must match the external MRI prior.
+  variables:
+    tas: {domain: global, n_modes: 15}
+    ohc300: {domain: global, n_modes: 30}
+    tos: {domain: global, n_modes: 15}
+    sic: {domain: northern_hemisphere, n_modes: 15, eof_fillna_value: 0.0}
+    sit: {domain: northern_hemisphere, n_modes: 15, eof_fillna_value: 0.0}
+    ohc2000: {domain: global, n_modes: 30}
+
+observations:
+  sedpsm:
+    enabled: true
+    # Change this together with project.name for PPE experiments 0--4.
+    experiment: 0
+    path: ${SEDPSM_DATA_PATH}
+    n_age_realizations: 1
+    variance_floor: 1.0e-8
+    climatology_path: ${LMR4DVAR_OBSERVATION_ROOT}/origin/Land_and_Ocean_LatLong_1.2x2.nc
+    climatology_variable: climatology
+
+assimilation:
+  start: "0850-01"
+  end: "2000-12"
+  optimizer: lbfgs
+  max_iterations: 200
+  inner_iterations: 10
+  minimum_outer_iterations: 20
+  history_size: 100
+  device: cuda
+  precision: float32
+  initial_weight: 1.0
+  model_error_weight: 1.0
+  tolerance_gradient: 1.0e-7
+  tolerance_change: 1.0e-9
+  outer_tolerance_change: 1.0e-6
+
+reconstruction:
+  variables: [tas, ohc300, tos, sic, sit, ohc2000]
+  indices: [GMT, Nino34, GMOHC, SIA, SIV]
+  sea_ice_concentration_scale: 100.0
+  sea_ice_concentration_climatology:
+    path: ${LMR4DVAR_SIMULATION_ROOT}/MRI-ESM2-0/clim/clim_remap2x2_siconc_SImon_MRI-ESM2-0_past1000_r1i1p1f1_085001-184912.nc
+    variable: siconc
+  sea_ice_thickness_climatology:
+    path: ${LMR4DVAR_SIMULATION_ROOT}/MRI-ESM2-0/clim/clim_remap2x2_sithick_SImon_MRI-ESM2-0_past1000_r1i1p1f1_085001-184912.nc
+    variable: sithick
+  plot_figures: true
+
+verification:
+  anomaly_period: [850, 1849]
+  # The currently shared quarterly iCESM reference ends in 1849.
+  comparison_period: [850, 1849]
+  running_mean_years: 31
+  plot_figures: true
+  reference_fields:
+    tas:
+      path: ${LMR4DVAR_REFERENCE_ROOT}/Pattern/iCESM_tas_sfc_850-1849_quarterly_2deg.nc
+      variable: tas
+      comparison_period: [850, 1849]
+  reference_indices:
+    GMT:
+      path: ${LMR4DVAR_REFERENCE_ROOT}/Index/GMT.nc
+      comparison_period: [850, 1849]

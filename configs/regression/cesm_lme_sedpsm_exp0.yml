@@ -1,0 +1,111 @@
+project:
+  name: cesm_lme_sedpsm_exp0
+  description: CESM-LME 13-member LIM prior with SedPSM PPE experiment 0
+
+paths:
+  simulation_root: ${LMR4DVAR_SIMULATION_ROOT}
+  output_root: ${LMR4DVAR_OUTPUT_ROOT}
+  sedpsm_root: ${SEDPSM_ROOT}
+
+state:
+  timestep_months: 3
+  variables:
+    tas:
+      domain: global
+      n_modes: 15
+      source_name: tas
+      input_pattern: CESM_LME/season_detrend/tas/*.nc
+      input_combine: concatenate_members
+    ohc300:
+      domain: global
+      n_modes: 30
+      source_name: ohc300
+      input_pattern: CESM_LME/season_detrend/ohc300/*.nc
+      input_combine: concatenate_members
+    tos:
+      domain: global
+      n_modes: 15
+      source_name: tos
+      input_pattern: CESM_LME/season_detrend/tos/*.nc
+      input_combine: concatenate_members
+    sic:
+      domain: northern_hemisphere
+      n_modes: 15
+      source_name: sic
+      input_pattern: CESM_LME/season_detrend/sic/*.nc
+      input_combine: concatenate_members
+    sit:
+      domain: northern_hemisphere
+      n_modes: 15
+      source_name: sit
+      input_pattern: CESM_LME/season_detrend/sit/*.nc
+      input_combine: concatenate_members
+    ohc2000:
+      domain: global
+      n_modes: 30
+      source_name: ohc2000
+      input_pattern: CESM_LME/season_detrend/ohc2000/*.nc
+      input_combine: concatenate_members
+
+preprocess:
+  input_kind: prepared_quarterly
+  training_period: [850, 1849]
+  target_grid_degrees: 2
+  regrid: none
+  remove_monthly_climatology: false
+  quarterly_mode: legacy_qs_dec
+  seasonal_months: [1, 4, 7, 10]
+  detrend: none
+
+eof:
+  area_weighted: true
+  solver: deterministic
+  center: false
+
+lim:
+  lag_steps: 1
+  # Thirteen independent 4,000-quarter members; never fit across boundaries.
+  segment_length_steps: 4000
+  # Assimilation uses discrete G/Qd/C0. log(G) is complex for this CESM fit.
+  fit_noise: false
+  center_training: false
+  require_stable: true
+  covariance_floor_relative: 1.0e-10
+
+observations:
+  sedpsm:
+    enabled: true
+    experiment: 0
+    relative_path: data/PPE/pseudo_sedDB_0.pkl
+    n_age_realizations: 1
+    variance_floor: 1.0e-8
+    climatology_path: ${LMR4DVAR_OBSERVATION_ROOT}/origin/Land_and_Ocean_LatLong_1.2x2.nc
+    climatology_variable: climatology
+
+assimilation:
+  start: "0850-01"
+  end: "2005-12"
+  optimizer: lbfgs
+  max_iterations: 100
+  device: auto
+  initial_weight: 1.0
+  model_error_weight: 1.0
+
+reconstruction:
+  variables: [tas, ohc300, tos, sic, sit, ohc2000]
+  indices: [GMT, Nino34, SIA, SIV]
+  sea_ice_concentration_scale: 100.0
+  sea_ice_concentration_climatology:
+    path: ${LMR4DVAR_SIMULATION_ROOT}/CESM_LME/clim/clim_sic_mean.nc
+    variable: aice
+  sea_ice_thickness_climatology:
+    path: ${LMR4DVAR_SIMULATION_ROOT}/CESM_LME/clim/clim_sit_mean.nc
+    variable: hi
+
+verification:
+  anomaly_period: [850, 1849]
+  comparison_period: [850, 2000]
+  running_mean_years: 31
+  reference_fields:
+    tas: ${LMR4DVAR_REFERENCE_ROOT}/Pattern/iCESM_tas_sfc_850-1849_quarterly_2deg.nc
+  reference_indices: ${LMR4DVAR_REFERENCE_ROOT}/Index/GMT.nc

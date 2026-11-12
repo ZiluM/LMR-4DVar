@@ -1,0 +1,14 @@
+paths:
+  simulation_root: ${LMR4DVAR_SIMULATION_ROOT}
+  output_root: ${LMR4DVAR_OUTPUT_ROOT}
+  sedpsm_root: ${SEDPSM_ROOT}
+
+hpc:
+  system: pbs
+  queue: ${LMR4DVAR_PBS_QUEUE}
+  account: ${LMR4DVAR_PBS_ACCOUNT}
+  python_executable: ${LMR4DVAR_PYTHON}
+  walltime: "12:00:00"
+  memory_gb: 80
+  cpus: 1
+  gpus: 0

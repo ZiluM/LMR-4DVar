@@ -1,0 +1,9 @@
+hpc:
+  system: pbs
+  queue: ${LMR4DVAR_PBS_QUEUE}
+  account: ${LMR4DVAR_PBS_ACCOUNT}
+  python_executable: ${LMR4DVAR_PYTHON}
+  walltime: "24:00:00"
+  memory_gb: 80
+  cpus: 8
+  gpus: 1

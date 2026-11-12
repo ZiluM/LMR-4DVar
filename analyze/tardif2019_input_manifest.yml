@@ -1,0 +1,68 @@
+# Input provenance only: not an executable ExperimentConfig.
+schema_version: 1
+retrieved_utc_date: '2026-10-07'
+experiment:
+  model: CESM-LME
+  proxies: PAGES2k real proxies
+  reconstruction_years: [-500, 2000]
+  timestep_months: 3
+  season_policy: complete DJF/MAM/JJA/SON unions only
+  parity_target: method consistency first; original numerical comparison later
+observations:
+  root: ${LMR4DVAR_TARDIF_OBSERVATION_ROOT}
+  pages2k:
+    filename: pages2kv2.json
+    url: https://raw.githubusercontent.com/fzhu2e/cfr-data/main/pages2kv2.json
+    sha256: 1f95668bba18eefed8dcbfd04e3b539b9c5458ca1f3a783a9d034924076640a1
+    bytes: 7832898
+    records: 692
+    tree_ring_width_records: 354
+    seasonal_metadata: absent from this CFR export; requires original metadata for numerical parity
+  precipitation:
+    filename: full_data_v6_precip_10.nc.gz
+    url: https://opendata.dwd.de/climate_environment/GPCC/full_data/full_data_v6_precip_10.nc.gz
+    doi: 10.5676/DWD_GPCC/FD_M_V6_100
+    version: GPCC Full Data Reanalysis v6, 1 degree
+    sha256: 1606b78fc0f702e1eef79dc57038be47440925eeb48aa983bf93ab194496904e
+    compressed_bytes: 66345164
+    variable: p
+    declared_units: mm/month
+    monthly_coverage: [1901-01, 2010-12]
+    decompressed_bytes: 342162128
+    conversion_to_mm_per_day: divide each monthly total by its calendar days_in_month
+  temperature:
+    filename: gistemp1200_GHCNv4_ERSSTv5.nc.gz
+    url: https://data.giss.nasa.gov/pub/gistemp/gistemp1200_GHCNv4_ERSSTv5.nc.gz
+    version: GISTEMP v4 current snapshot; NOT a historical 2019 snapshot
+    sha256: 6a597332bcefbe0fbe5a6ce7677a9012fa766cc43cea291d6207c12db2fe0cc6
+    compressed_bytes: 25853076
+    variable: tempanomaly
+    declared_units: K
+    monthly_coverage: [1880-01, 2026-08]
+    decompressed_bytes: 57047300
+simulation:
+  precipitation_directory: ${LMR4DVAR_CESM_PRECIPITATION_ROOT}
+  temperature_directory: ${LMR4DVAR_SIMULATION_ROOT}/CESM_LME/origin/tas
+  members: ['001', '002', '003', '004', '005', '006', '007', '008', '009', '010', '011', '012', '013']
+  period_suffix: 085001-184912.nc
+  precipitation_units:
+    PRECT_declared_units: absent
+    verified_components: member 001 PRECC and PRECL each declare m/s
+    conversion_to_mm_per_day: 86400000
+  time_policy: restore physical calendar month from CF interval bounds before aggregation
+  raw_month_alignment_audit: passed for all 13 temperature/precipitation members
+  alignment_report: ${LMR4DVAR_INPUT_ROOT}/tardif2019/cesm_monthly_alignment_audit.json
+  existing_prepared_prior: physical TAS seasonal mismatch confirmed for member 001; do not silently reuse
+  training_members: ['001', '002', '003', '004', '005', '006', '007', '008', '009', '010', '012', '013']
+  excluded_member: '011'
+  exclusion_reason: POP SST interval for January 1230 starts January 2 at 01:00; not a complete month
+  complete_training_years: [851, 1849]
+  quarterly_samples_per_member: 3996
+  total_training_samples: 47952
+  ohc2000_coverage_policy: actual source extends to 2005 despite filename; explicitly subset to exact SST bounds-source coordinates
+  partial_boundary_policy: drop incomplete initial POP January 850; never round internal partial intervals
+reference_code:
+  repository: https://github.com/modons/LMR
+  revision: 8ac62902d7dddcf259289fedddd8fbea0c221730
+  files: [LMR_psms.py, LMR_PSMbuild.py]
+  status: pinned comparison implementation; publication-run revision not established

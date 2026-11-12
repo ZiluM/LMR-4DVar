@@ -1,0 +1,194 @@
+digraph LMR4DWorkflow {
+  graph [
+    rankdir=TB,
+    bgcolor="#ffffff",
+    pad="0.35",
+    nodesep="0.38",
+    ranksep="0.72",
+    splines=spline,
+    fontname="DejaVu Sans",
+    fontsize=24,
+    label="LMR4D Workflow",
+    labelloc=t,
+    labeljust=l
+  ];
+  node [
+    shape=box,
+    style="rounded,filled",
+    color="#3f4752",
+    penwidth=1.2,
+    fontname="DejaVu Sans",
+    fontsize=12,
+    margin="0.14,0.10"
+  ];
+  edge [
+    color="#59636f",
+    penwidth=1.4,
+    arrowsize=0.75,
+    fontname="DejaVu Sans",
+    fontsize=10
+  ];
+
+  config [
+    shape=note,
+    fillcolor="#f1f3f5",
+    label="Experiment YAML + local profile\nwindow · variables · paths · resources"
+  ];
+
+  subgraph cluster_prior {
+    label="A. Build the climate prior";
+    color="#8ca596";
+    penwidth=1.4;
+    style="rounded";
+    fontname="DejaVu Sans";
+    fontsize=15;
+
+    simulation [
+      shape=cylinder,
+      fillcolor="#e8f1ec",
+      label="Local climate simulations\nmonthly / prepared quarterly\nNetCDF"
+    ];
+    preprocess [
+      fillcolor="#d9eadf",
+      label="1  PREPROCESS\ntime/season selection · anomalies · detrending\nregridding · domain/mask"
+    ];
+    eof [
+      fillcolor="#d9eadf",
+      label="2  EOF\narea-weighted EOFs by variable\ncomponents · PCs · mean · mask"
+    ];
+    coupled [
+      fillcolor="#edf5f0",
+      label="Coupled state vector\n[tas, tos, OHC, SIC, SIT, ...] PCs"
+    ];
+    lim [
+      fillcolor="#d9eadf",
+      label="3  TRAIN LIM\nx(k+1)-mean = G[x(k)-mean] + noise\nG · Qd · C0 · forecast skill"
+    ];
+    prior_reuse [
+      shape=folder,
+      style="rounded,dashed,filled",
+      color="#6e8b7b",
+      fillcolor="#f5faf7",
+      label="Optional: prior_run_root\nreuse trained EOF + LIM"
+    ];
+
+    simulation -> preprocess -> eof -> coupled -> lim;
+    prior_reuse -> lim [style=dashed, label="load artifacts"];
+  }
+
+  subgraph cluster_obs {
+    label="B. Prepare observations";
+    color="#b99b63";
+    penwidth=1.4;
+    style="rounded";
+    fontname="DejaVu Sans";
+    fontsize=15;
+
+    pages_raw [shape=cylinder, fillcolor="#fff4dc", label="PAGES2k raw\n+ instrumental TAS/TOS"];
+    pages [fillcolor="#f8e5b8", label="4  CALIBRATE PAGES2k\nseasonality · PSM calibration\nselect TAS/TOS predictor · R"];
+
+    temp_raw [shape=cylinder, fillcolor="#fff4dc", label="Temp12k compilation"];
+    temp [fillcolor="#f8e5b8", label="5  PREPARE Temp12k\nseasonality · reference\ndeduplicate against PAGES2k"];
+
+    bore_raw [shape=cylinder, fillcolor="#fff4dc", label="Borehole profiles\nmean ± perturbations"];
+    bore [fillcolor="#f8e5b8", label="6  ESTIMATE Borehole error\ntemperature histories · effective variance"];
+
+    sedpsm [
+      shape=folder,
+      fillcolor="#fff4dc",
+      label="SedPSM PPE (external library)\nproxy + age realizations + R"
+    ];
+    obs_contract [
+      fillcolor="#fff9ed",
+      label="Common observation contract\ny · time/window · location\nH(x) · error variance R · family"
+    ];
+
+    pages_raw -> pages -> obs_contract;
+    temp_raw -> temp -> obs_contract;
+    bore_raw -> bore -> obs_contract;
+    sedpsm -> obs_contract;
+    eof -> pages [label="EOF-projected\ninstrumental fields"];
+  }
+
+  subgraph cluster_da {
+    label="C. Weak-constraint 4D-Var";
+    color="#708da1";
+    penwidth=1.4;
+    style="rounded";
+    fontname="DejaVu Sans";
+    fontsize=15;
+
+    objective [
+      fillcolor="#dcebf3",
+      label="7  ASSIMILATE\ndirectly optimize the full state trajectory\nv = [x(0), x(1), ..., x(K)]"
+    ];
+    costs [
+      shape=record,
+      fillcolor="#eef6fa",
+      label="{J = J0 + Jm + Jo|J0: initial state, C0|Jm: x(k)-Gx(k-1), Qd|Jo: y-H(x), R}"
+    ];
+    optimizer [
+      fillcolor="#dcebf3",
+      label="L-BFGS + strong Wolfe\nGPU/CPU · float32/float64\ncost/gradient/family diagnostics"
+    ];
+    analysis [
+      shape=cylinder,
+      fillcolor="#e9f2f7",
+      label="analysis.nc\noptimized state trajectory\n+ diagnostics.json"
+    ];
+
+    lim -> objective [label="G, Qd, C0, μ"];
+    obs_contract -> objective [label="H, y, R"];
+    objective -> costs -> optimizer -> analysis;
+  }
+
+  subgraph cluster_output {
+    label="D. Reconstruct and verify";
+    color="#aa7f88";
+    penwidth=1.4;
+    style="rounded";
+    fontname="DejaVu Sans";
+    fontsize=15;
+
+    reconstruct [
+      fillcolor="#f2dfe3",
+      label="8  RECONSTRUCT\nEOF decode: PCs to physical fields"
+    ];
+    products [
+      shape=cylinder,
+      fillcolor="#f8ecef",
+      label="fields/*.nc\nindices.nc: GMT · GMOHC · SIA · SIV\nquarterly + annual index figures"
+    ];
+    references [
+      shape=cylinder,
+      fillcolor="#f7edf0",
+      label="Independent references\nobserved fields + indices"
+    ];
+    verify [
+      fillcolor="#f2dfe3",
+      label="9  VERIFY\nquarter-specific climatology anomalies\ngridpoint temporal correlation + area mean\nRMSE · annual/seasonal · running mean"
+    ];
+    metrics [
+      shape=folder,
+      fillcolor="#f8ecef",
+      label="pattern_metrics.nc · summary.json\nfigures/pattern + figures/indices\ncorrelation maps + scalar skill"
+    ];
+
+    analysis -> reconstruct;
+    eof -> reconstruct [label="EOF decoder"];
+    reconstruct -> products -> verify -> metrics;
+    references -> verify;
+  }
+
+  receipts [
+    shape=component,
+    fillcolor="#eceff2",
+      label="Every stage: receipt.json\nconfig hash · dependency · file fingerprints\nplan / resume / force / PBS"
+  ];
+
+  config -> preprocess [style=dashed];
+  config -> pages [style=dashed];
+  config -> objective [style=dashed];
+  config -> verify [style=dashed];
+  metrics -> receipts [style=dashed, arrowhead=none];
+}

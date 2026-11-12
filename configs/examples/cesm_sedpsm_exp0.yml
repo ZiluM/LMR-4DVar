@@ -1,0 +1,71 @@
+project:
+  name: cesm_sedpsm_exp0
+  description: CESM-prior SedPSM PPE experiment 0 vertical-slice regression
+
+paths:
+  simulation_root: ${LMR4DVAR_SIMULATION_ROOT}
+  output_root: ${LMR4DVAR_OUTPUT_ROOT}
+  sedpsm_root: ${SEDPSM_ROOT}
+
+state:
+  timestep_months: 3
+  variables:
+    tas: {domain: global, n_modes: 15}
+    ohc300: {domain: global, n_modes: 30}
+    tos: {domain: global, n_modes: 15}
+    sic: {domain: northern_hemisphere, n_modes: 15}
+    sit: {domain: northern_hemisphere, n_modes: 15}
+    ohc2000: {domain: global, n_modes: 30}
+
+preprocess:
+  target_grid_degrees: 2
+  regrid: linear
+  remove_monthly_climatology: true
+  quarterly_mode: legacy_qs_dec
+  seasonal_months: [1, 4, 7, 10]
+  detrend: linear_by_month
+
+eof:
+  area_weighted: true
+  solver: deterministic
+  center: false
+
+lim:
+  lag_steps: 1
+  fit_noise: true
+  center_training: false
+  require_stable: true
+  covariance_floor_relative: 1.0e-10
+
+observations:
+  sedpsm:
+    enabled: true
+    experiment: 0
+    path: ${SEDPSM_DATA_PATH}
+    n_age_realizations: 1
+    variance_floor: 1.0e-8
+
+assimilation:
+  start: "0850-01"
+  end: "2005-12"
+  optimizer: lbfgs
+  max_iterations: 100
+  device: auto
+  initial_weight: 1.0
+  model_error_weight: 1.0
+
+reconstruction:
+  variables: [tas, tos, ohc300, ohc2000, sic, sit]
+  indices: [GMT, Nino34, SIA, SIV]
+  sea_ice_concentration_scale: 100.0
+  sea_ice_concentration_climatology:
+    path: ${LMR4DVAR_SIMULATION_ROOT}/CESM_LME/clim/clim_sic_mean.nc
+    variable: aice
+  sea_ice_thickness_climatology:
+    path: ${LMR4DVAR_SIMULATION_ROOT}/CESM_LME/clim/clim_sit_mean.nc
+    variable: hi
+
+verification:
+  anomaly_period: [850, 1849]
+  comparison_period: [850, 2000]
+  running_mean_years: 31

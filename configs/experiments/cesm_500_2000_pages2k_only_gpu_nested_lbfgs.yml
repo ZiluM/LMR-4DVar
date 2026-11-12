@@ -1,0 +1,104 @@
+project:
+  name: CESM_pages2k_only_500_2000_gpu_nested_lbfgs
+  description: >-
+    Real-proxy PAGES2k-only counterpart of the CESM all-proxy experiment.
+    Reuses the same CESM-LME EOF/LIM, calibrated PAGES2k, optimizer,
+    reconstruction, and verification settings; excludes Temp12k and boreholes.
+
+paths:
+  simulation_root: ${LMR4DVAR_SIMULATION_ROOT}
+  output_root: ${LMR4DVAR_OUTPUT_ROOT}
+  prior_run_root: ${LMR4DVAR_OUTPUT_ROOT}/cesm_lme_sedpsm_exp0
+
+state:
+  timestep_months: 3
+  variables:
+    tas:
+      domain: global
+      n_modes: 15
+    ohc300:
+      domain: global
+      n_modes: 30
+    tos:
+      domain: global
+      n_modes: 15
+    sic:
+      domain: northern_hemisphere
+      n_modes: 15
+    sit:
+      domain: northern_hemisphere
+      n_modes: 15
+    ohc2000:
+      domain: global
+      n_modes: 30
+
+observations:
+  pages2k:
+    enabled: true
+    strict: true
+    path: ${LMR4DVAR_PAGES2K_ARTIFACT}
+  temp12k:
+    enabled: false
+  borehole:
+    enabled: false
+  sedpsm:
+    enabled: false
+
+assimilation:
+  start: "-500-01"
+  end: "2000-12"
+  optimizer: lbfgs
+  max_iterations: 200
+  inner_iterations: 10
+  minimum_outer_iterations: 20
+  device: cuda
+  precision: float32
+  initial_weight: 1.0
+  model_error_weight: 1.0
+  tolerance_gradient: 1.0e-7
+  tolerance_change: 1.0e-9
+  outer_tolerance_change: 1.0e-6
+  history_size: 100
+
+reconstruction:
+  variables: [tas, ohc300, tos, sic, sit, ohc2000]
+  indices: [GMT, Nino34, GMOHC, SIA, SIV]
+  sea_ice_concentration_scale: 100.0
+  sea_ice_concentration_climatology:
+    path: ${LMR4DVAR_SIMULATION_ROOT}/CESM_LME/clim/clim_sic_mean.nc
+    variable: aice
+  sea_ice_thickness_climatology:
+    path: ${LMR4DVAR_SIMULATION_ROOT}/CESM_LME/clim/clim_sit_mean.nc
+    variable: hi
+  plot_figures: true
+  figure_dpi: 150
+
+verification:
+  anomaly_period: [1950, 1980]
+  comparison_period: [1900, 1999]
+  running_mean_years: 31
+  plot_figures: true
+  figure_dpi: 150
+  reference_fields:
+    tos:
+      path: ${LMR4DVAR_OBSERVATION_ROOT}/season/HadISST_2x2_DE.nc
+      variable: sst
+      comparison_period: [1900, 1999]
+    tas:
+      path: ${LMR4DVAR_OBSERVATION_ROOT}/season/HadCRUT.5.0.2.0.analysis.anomalies.ensemble_mean.2x2.nc
+      variable: tas_mean
+      comparison_period: [1900, 1999]
+    sic:
+      path: ${LMR4DVAR_OBSERVATION_ROOT}/season/seaice_nh_197811-202309.2x2.nc
+      variable: cdr_seaice_conc_monthly
+      comparison_period: [1979, 1999]
+    ohc300:
+      path: ${LMR4DVAR_OBSERVATION_ROOT}/season/EN.4.2.2.f.analysis.g10.OHC300.190001-202012.2x2.nc
+      comparison_period: [1940, 1999]
+  reference_indices:
+    GMT:
+      path: ${LMR4DVAR_OBSERVATION_ROOT}/Index/GMT.nc
+      comparison_period: [1900, 1999]
+    Nino34:
+      path: ${LMR4DVAR_OBSERVATION_ROOT}/Index/Nino34.nc
+      comparison_period: [1880, 1999]

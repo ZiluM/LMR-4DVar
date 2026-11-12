@@ -1,0 +1,61 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lmr4dvar"
+version = "0.1.0"
+description = "End-to-end LIM-prior weak-constraint 4D-Var paleoclimate reconstruction"
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.10,<3.13"
+dependencies = [
+  "numpy>=1.24,<2",
+  "pandas>=2.0,<3",
+  "xarray>=2025.6.1",
+  "dask[array]",
+  "netcdf4>=1.6",
+  "h5netcdf>=1.3",
+  "pyyaml>=6",
+  "pydantic>=2.6,<3",
+  "scipy>=1.10,<1.14",
+  "statsmodels>=0.14,<1",
+  "torch==2.5.1",
+  "cfr==2024.4.4",
+  "matplotlib>=3.6",
+  "cartopy>=0.22",
+]
+
+[project.optional-dependencies]
+grib = [
+  "eccodes>=2.38,<3",
+  "cfgrib>=0.9.15,<1",
+  "dask[array]",
+]
+dev = [
+  "pytest>=8",
+  "pytest-cov>=5",
+  "ruff>=0.6",
+]
+
+[project.scripts]
+lmr4dvar = "lmr4dvar.cli:main"
+
+[project.urls]
+Repository = "https://github.com/ZiluM/LMR-4DVar"
+Issues = "https://github.com/ZiluM/LMR-4DVar/issues"
+Paper = "https://arxiv.org/abs/2608.19469"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

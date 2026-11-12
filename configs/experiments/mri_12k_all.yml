@@ -1,0 +1,152 @@
+project:
+  name: MRI_temp12k_12k_0-2000_all
+  description: >-
+    Port of legacy Final/config/MRI_12k_all.yml using the independently trained
+    MRI-ESM2-0 EOF/LIM prior and PAGES2k, Temp12k, and borehole observations.
+
+paths:
+  simulation_root: ${LMR4DVAR_SIMULATION_ROOT}
+  output_root: ${LMR4DVAR_OUTPUT_ROOT}
+  prior_run_root: ${LMR4DVAR_OUTPUT_ROOT}/mri_esm2_sedpsm_exp0
+
+state:
+  timestep_months: 3
+  variables:
+    tas:
+      domain: global
+      n_modes: 15
+    ohc300:
+      domain: global
+      n_modes: 30
+    tos:
+      domain: global
+      n_modes: 15
+    sic:
+      domain: northern_hemisphere
+      n_modes: 15
+      eof_fillna_value: 0.0
+    sit:
+      domain: northern_hemisphere
+      n_modes: 15
+      eof_fillna_value: 0.0
+    ohc2000:
+      domain: global
+      n_modes: 30
+
+observations:
+  pages2k:
+    enabled: true
+    strict: true
+    calibration:
+      enabled: true
+      source_name: PAGES2kv2
+      instrumental_path: ${LMR4DVAR_OBSERVATION_ROOT}/gistemp1200_GHCNv4_ERSSTv5.2x2.nc
+      instrumental_variable: tempanomaly
+      anomaly_period: [1951, 1980]
+      calibration_period: [1850, 2015]
+      low_resolution_period: [1850, 2000]
+      minimum_overlap: 25
+      psm_correlation_minimum: 0.1
+      residual_autocorrelation_maximum: 0.9
+      projection_fill_value: 0.0
+      marine_predictor: best_of_tas_tos
+  temp12k:
+    enabled: true
+    path: ${LMR4DVAR_TEMP12K_ARTIFACT}
+    strict: true
+    # `path` above is retained as a legacy fallback. With preparation enabled,
+    # assimilation uses stages/prepare-temp12k/temp12k.pkl instead.
+    preparation:
+      enabled: true
+      source_path: ${LMR4DVAR_TEMP12K_SOURCE}
+      source_format: raw_temp12k
+      pages2k_source_name: PAGES2kv2
+      anomaly_period: [0, 2000]
+      require_anomaly_baseline: false
+      comparison_period: [0, 2000]
+      maximum_distance_km: 50
+      duplicate_correlation_minimum: 0.98
+      duplicate_minimum_overlap: 11
+      diagnostic_absolute_correlation_minimum: 0.8
+      diagnostic_minimum_overlap: 20
+      minimum_record_points: 2
+  borehole:
+    enabled: true
+    strict: false
+    reference_period: [1300, 1700]
+    history_policy: legacy_reference_start
+    error_estimation:
+      enabled: true
+      perturbation_path: ${LMR4DVAR_BOREHOLE_ROOT}/CV21_profile_perturbations.nc
+      method_profile: si_2026
+      history_start_year: 1300
+      depth_start: 20
+      depth_end: 300
+      depth_step: 5
+      minimum_depth_points: 5
+      time_steps: [25, 40, 50]
+      thermal_conductivities: [2.5, 3.0, 3.5]
+      volumetric_heat_capacities: [2.5e6, 3.0e6, 3.5e6]
+      variance_floor: 1.0e-8
+
+assimilation:
+  start: "-12000-01"
+  end: "2020-12"
+  optimizer: lbfgs
+  # Up to 200 outer steps x 10 inner updates, with persistent LBFGS history.
+  max_iterations: 200
+  inner_iterations: 10
+  minimum_outer_iterations: 20
+  device: auto
+  precision: float32
+  initial_weight: 1.0
+  model_error_weight: 1.0
+  tolerance_gradient: 1.0e-7
+  tolerance_change: 1.0e-9
+  outer_tolerance_change: 1.0e-6
+  history_size: 100
+
+reconstruction:
+  variables: [tas, ohc300, tos, sic, sit, ohc2000]
+  # The trained SIC/SIT state contains anomalies. Absolute sea-ice area,
+  # extent, and volume require adding a model climatology before integration.
+  indices: [GMT, Nino34, GMOHC, SIA, SIV]
+  sea_ice_concentration_scale: 100.0
+  sea_ice_concentration_climatology:
+    path: ${LMR4DVAR_SIMULATION_ROOT}/MRI-ESM2-0/clim/clim_remap2x2_siconc_SImon_MRI-ESM2-0_past1000_r1i1p1f1_085001-184912.nc
+    variable: siconc
+  sea_ice_thickness_climatology:
+    path: ${LMR4DVAR_SIMULATION_ROOT}/MRI-ESM2-0/clim/clim_remap2x2_sithick_SImon_MRI-ESM2-0_past1000_r1i1p1f1_085001-184912.nc
+    variable: sithick
+  plot_figures: true
+  figure_dpi: 150
+
+verification:
+  anomaly_period: [1950, 1980]
+  comparison_period: [1900, 1999]
+  running_mean_years: 31
+  plot_figures: true
+  figure_dpi: 150
+  reference_fields:
+    tos:
+      path: ${LMR4DVAR_OBSERVATION_ROOT}/season/HadISST_2x2_DE.nc
+      variable: sst
+      comparison_period: [1900, 1999]
+    tas:
+      path: ${LMR4DVAR_OBSERVATION_ROOT}/season/HadCRUT.5.0.2.0.analysis.anomalies.ensemble_mean.2x2.nc
+      variable: tas_mean
+      comparison_period: [1900, 1999]
+    sic:
+      path: ${LMR4DVAR_OBSERVATION_ROOT}/season/seaice_nh_197811-202309.2x2.nc
+      variable: cdr_seaice_conc_monthly
+      comparison_period: [1979, 1999]
+    ohc300:
+      path: ${LMR4DVAR_OBSERVATION_ROOT}/season/EN.4.2.2.f.analysis.g10.OHC300.190001-202012.2x2.nc
+      comparison_period: [1940, 1999]
+  reference_indices:
+    GMT:
+      path: ${LMR4DVAR_OBSERVATION_ROOT}/Index/GMT.nc
+      comparison_period: [1900, 1999]
+    Nino34:
+      path: ${LMR4DVAR_OBSERVATION_ROOT}/Index/Nino34.nc
+      comparison_period: [1880, 1999]

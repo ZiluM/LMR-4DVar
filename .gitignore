@@ -1,0 +1,40 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+.env
+.DS_Store
+/build/
+/dist/
+*.pdf
+*.aux
+*.out
+*.fls
+*.fdb_latexmk
+
+# User/site configuration
+configs/profiles/local.yml
+configs/profiles/local.yaml
+configs/paths.local.sh
+configs/local/
+
+# Scientific artifacts and runs
+/artifacts/
+/runs/
+/results/
+/logs/
+*.nc
+*.zarr/
+*.pkl
+*.pickle
+*.log
+*.o[0-9]*
+*.e[0-9]*
+
+# External repositories and local data
+/external/
+/data/
