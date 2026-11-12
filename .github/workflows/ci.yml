@@ -41,7 +41,9 @@ jobs:
               for case in ElementTree.parse(report).iter("testcase"):
                   for tag in ("failure", "error"):
                       for failure in case.findall(tag):
-                          message = case.attrib.get("name", "test") + "\n" + (failure.text or "")
+                          message = "\n".join((case.attrib.get("name", "test"),
+                                               failure.attrib.get("message", ""),
+                                               (failure.text or "")[-3000:]))
                           message = message.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
                           print("::error::" + message[:16000])
           PY

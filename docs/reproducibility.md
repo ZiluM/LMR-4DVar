@@ -45,6 +45,7 @@ The small-data validation environment uses:
 | CFR | 2024.4.4 |
 | Pydantic | 2.13.4 |
 | h5netcdf / netCDF4 | 1.8.1 / 1.7.3 |
+| h5py | 3.16.0 |
 
 `environment.yml` pins the principal numerical versions and uses portable
 PyTorch 2.5.1 without requiring a particular CUDA wheel. Its complete

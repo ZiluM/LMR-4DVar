@@ -2,7 +2,7 @@ cff-version: 1.2.0
 message: "Please cite the accompanying paper and record the software version used."
 title: "LMR4D-Var: paleoclimate reconstruction with weak-constraint 4D-Var"
 type: software
-version: 0.1.0
+version: 0.1.1
 license: MIT
 repository-code: "https://github.com/ZiluM/LMR-4DVar"
 url: "https://github.com/ZiluM/LMR-4DVar"
